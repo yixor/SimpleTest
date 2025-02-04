@@ -2,25 +2,23 @@ from datetime import datetime, timezone, timedelta
 
 import bcrypt
 import jwt
-from sqlalchemy import LargeBinary
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import LargeBinary, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from config import SETTINGS
+from orm.database import Base
 from models.tokens import Token
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(48))
+    login: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     pass_hash: Mapped[bytes] = mapped_column(LargeBinary(60))
 
     def __repr__(self) -> str:
-        return f"User(id={self.id!r}, name={self.name!r}, pass_hash={self.pass_hash!r})"
+        return f"User(id={self.id!r}, name={self.name!r}, login={self.login!r}, pass_hash={self.pass_hash!r})"
 
     def set_password(self, password: str) -> None:
         password_bytes = password.encode("utf-8")

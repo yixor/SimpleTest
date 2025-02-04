@@ -2,11 +2,10 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.future import select
 
-from orm.database import engine
-from orm.models import User
+from orm.database import get_async_session
+from orm.users import User
 from models.tokens import Token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -16,10 +15,9 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:
-    with Session(engine) as session:
-        user = session.execute(
-            select(User).where(User.name == form_data.username)
-        ).scalar_one_or_none()
+    async with get_async_session() as s:
+        result = await s.execute(select(User).where(User.login == form_data.username))
+        user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
