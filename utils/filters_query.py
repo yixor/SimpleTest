@@ -21,7 +21,7 @@ class Filter:
                 conditions.append(f"{field_name} <= {Filter._format_value(query.gt)}")
             if query.eq is not None:
                 conditions.append(f"{field_name} = {Filter._format_value(query.eq)}")
-        return " AND ".join(conditions) if len(conditions) != 0 else ""
+        return " AND ".join(conditions) if len(conditions) > 0 else ""
 
     @staticmethod
     def _enum_to_sql(field_name: str, value: Optional[enum.Enum]) -> str:
@@ -58,7 +58,11 @@ class Filter:
             elif field == "offset":
                 query_parts.append(Filter._add_offset_to_sql(value))
 
-        where_clause = " AND ".join(sql_conditions) if sql_conditions else ""
+        where_clause = " AND ".join(sql_conditions) if len(sql_conditions) > 0 else ""
         limit_offset_clause = " ".join(query_parts)
 
-        return where_clause + (" " + limit_offset_clause if limit_offset_clause else "")
+        return (
+            where_clause + (" " + limit_offset_clause)
+            if len(limit_offset_clause) > 0
+            else ""
+        )

@@ -7,7 +7,7 @@ from utils.filters_query import Filter
 from middleware.bearer import require_auth_token
 from models.reciept import Reciept
 from database import SessionDep
-from schemas.reciepts import CreateReciept, GetReciept, RecieptsFilter
+from schemas.reciepts import RecieptCreate, RecieptGet, RecieptsFilter
 
 
 router = APIRouter(prefix="/reciept", tags=["reciept"])
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/reciept", tags=["reciept"])
 @router.post("")
 async def create_reciept(
     user_id: Annotated[int, Depends(require_auth_token, use_cache=False)],
-    cr: CreateReciept,
+    cr: RecieptCreate,
     db: SessionDep,
 ):
     total = 0.0
@@ -53,12 +53,13 @@ async def list_personal_reciepts(
     async with db:
         result = await db.execute(
             text(
-                f"SELECT * FROM {Reciept.__tablename__} WHERE user_id = {user_id} AND {sql_query}"
+                f"SELECT * FROM {Reciept.__tablename__}"
+                f"WHERE user_id = {user_id} AND {sql_query}"
             )
         )
     rows = result.fetchall()
     return [
-        GetReciept(
+        RecieptGet(
             id=row.id,
             data=row.data,
             total=row.total,

@@ -1,10 +1,9 @@
 from datetime import datetime
-from timeit import timeit
 from typing import Any, Dict
 
 from fastapi import HTTPException
 
-from schemas.reciepts import Product
+# from schemas.reciepts import Product
 
 
 def format_number(value: float) -> str:
@@ -38,15 +37,14 @@ def get_header(prefix: str, data: str, sufix: str, width: int):
     return f"{prefix}{data}{sufix}".center(width)
 
 
-def gen_products(data: list[dict[str, Any] | Product], width: int):
-    if len(data) > 0 and isinstance(data[0], dict):
-        data = list(map(lambda product: Product(**product), data))
+def gen_products(data: list[dict[str, Any]], width: int):
+    # if len(data) > 0 and isinstance(data[0], dict):
+    #     data = list(map(lambda product: Product(**product), data))
     for product in data:
         {format_number(product.quantity)}
 
 
 def generate(width: int):
-
     separator = gen_separator("=", width)
 
 
