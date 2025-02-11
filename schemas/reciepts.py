@@ -1,6 +1,6 @@
+from datetime import datetime
 import enum
-from typing import Literal, Optional
-from annotated_types import T
+from typing import Literal, Optional, Any
 
 from pydantic import BaseModel
 
@@ -11,6 +11,7 @@ class Product(BaseModel):
     name: str
     price: float
     quantity: int
+    total: Optional[float] = None
 
 
 class PaymentType(enum.Enum):
@@ -23,21 +24,27 @@ class Payment(BaseModel):
     amount: float
 
 
-class RecieptData(BaseModel):
-    id: Optional[int] = None
+class RecieptCreate(BaseModel):
     products: list[Product]
     payment: Payment
-    total_amount: Optional[float] = None
-    rest: Optional[float] = None
+
+
+class RecieptGet(RecieptCreate):
+    id: int
+    total: float
+    rest: float
+    created: datetime
 
 
 class QueryPair(BaseModel):
-    gt: Optional[T]
-    ls: Optional[T]
+    gt: Optional[Any] = None
+    eq: Optional[Any] = None
+    ls: Optional[Any] = None
 
 
 class RecieptsFilter(BaseModel):
     created: Optional[QueryPair]
-    total_amount: Optional[QueryPair]
+    total: Optional[QueryPair]
+    type: Optional[PaymentType]
     offset: int = 0
     limit: int = SETTINGS.db_default_reciepts_per_page

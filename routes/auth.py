@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.future import select
 
-from orm.database import get_async_session
-from orm.users import User
-from models.tokens import Token
+from database import SessionDep
+from models.users import User
+from schemas.tokens import Token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -14,9 +14,10 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 @router.post("/token")
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: SessionDep,
 ) -> Token:
-    async with get_async_session() as s:
-        result = await s.execute(select(User).where(User.login == form_data.username))
+    async with db:
+        result = await db.execute(select(User).where(User.login == form_data.username))
         user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(

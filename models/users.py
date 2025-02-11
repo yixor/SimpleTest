@@ -6,8 +6,8 @@ from sqlalchemy import LargeBinary, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from config import SETTINGS
-from orm.database import Base
-from models.tokens import Token
+from database import Base
+from schemas.tokens import Token
 
 
 class User(Base):

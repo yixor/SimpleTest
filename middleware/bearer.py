@@ -7,7 +7,7 @@ from fastapi import Depends, HTTPException, Response, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from config import SETTINGS
-from models.tokens import TokenPayload
+from schemas.tokens import TokenPayload
 
 security = HTTPBearer()
 

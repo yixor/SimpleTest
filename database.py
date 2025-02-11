@@ -1,4 +1,6 @@
-from sqlalchemy import MetaData, create_engine
+from typing import Annotated
+
+from fastapi import Depends
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
@@ -15,18 +17,17 @@ engine = create_async_engine(
 )
 
 
-def get_async_session() -> AsyncSession:
+def get_db() -> AsyncSession:
     return sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 
-metadata = MetaData()
+SessionDep = Annotated[AsyncSession, Depends(get_db)]
 
 
 class Base(DeclarativeBase):
     pass
 
 
-def inspect_database():
-    sync_engine = create_engine(f"postgresql+psycopg2://{connection_url}")
-    metadata.reflect(bind=sync_engine)
-    metadata.create_all(sync_engine)
+async def inspect_database():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all())

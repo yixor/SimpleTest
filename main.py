@@ -9,9 +9,9 @@ from routes import auth
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    from orm.database import inspect_database
+    from database import inspect_database
 
-    inspect_database()
+    await inspect_database()
     yield
 
 

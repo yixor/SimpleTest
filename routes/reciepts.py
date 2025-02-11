@@ -1,12 +1,13 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.future import select
-from sqlalchemy import and_, text
+from sqlalchemy import text
 
+from utils.filters_query import Filter
 from middleware.bearer import require_auth_token
-from orm.reciept import Reciept
-from orm.database import get_async_session
-from models.reciepts import RecieptData, RecieptsFilter
+from models.reciept import Reciept
+from database import SessionDep
+from schemas.reciepts import CreateReciept, GetReciept, RecieptsFilter
 
 
 router = APIRouter(prefix="/reciept", tags=["reciept"])
@@ -15,50 +16,69 @@ router = APIRouter(prefix="/reciept", tags=["reciept"])
 @router.post("")
 async def create_reciept(
     user_id: Annotated[int, Depends(require_auth_token, use_cache=False)],
-    reciept_data: RecieptData,
+    cr: CreateReciept,
+    db: SessionDep,
 ):
-
-    reciept_data.total = sum(
-        product.quantity * product.price for product in reciept_data.products
-    )
-    reciept_data.rest = reciept_data.total - reciept_data.payment.amount
-    async with get_async_session() as s:
+    total = 0.0
+    for product in cr.products:
+        product.total = product.quantity * product.price
+        total += product.total
+    rest = total - cr.payment.amount
+    async with db:
         try:
             reciept = Reciept(
                 user_id=user_id,
-                data=reciept_data.model_dump(),
-                total_amount=reciept_data.total,
-                type=reciept_data.payment.type,
+                data=cr.model_dump(),
+                total=total,
+                rest=rest,
+                type=cr.payment.type,
             )
-            s.add(reciept)
-            await s.commit()
-            await s.refresh(reciept)
-            reciept_data = reciept.id
+            db.add(reciept)
+            await db.commit()
+            await db.refresh(reciept)
         except Exception as e:
-            await s.rollback()
+            await db.rollback()
             raise e
-    return reciept_data
+
+    return reciept.to_pydantic_model()
 
 
 @router.get("/list")
 async def list_personal_reciepts(
     user_id: Annotated[int, Depends(require_auth_token)],
-    filter_query: Annotated[RecieptsFilter, Query()],
+    rf: RecieptsFilter,
+    db: SessionDep,
 ):
-
-    async with get_async_session() as s:
-
-        s.execute(text())
+    sql_query = Filter.make_query(rf)
+    async with db:
+        result = await db.execute(
+            text(
+                f"SELECT * FROM {Reciept.__tablename__} WHERE user_id = {user_id} AND {sql_query}"
+            )
+        )
+    rows = result.fetchall()
+    return [
+        GetReciept(
+            id=row.id,
+            data=row.data,
+            total=row.total,
+            rest=row.rest,
+            created=row.created,
+        )
+        for row in rows
+    ]
 
 
 @router.get("/{reciept_id}")
-async def get_reciept(reciept_id: int):
-    async with get_async_session() as s:
-        result = await s.execute(select(Reciept).where(Reciept.id == reciept_id))
+async def get_reciept(
+    reciept_id: int,
+    db: SessionDep,
+):
+    async with db:
+        result = await db.execute(select(Reciept).where(Reciept.id == reciept_id))
         reciept = result.scalar_one_or_none()
     if not reciept:
         return Response(
             status_code=status.HTTP_404_NOT_FOUND, content="Cannot find reciept by id"
         )
-
     return reciept.to_pydantic_model()
