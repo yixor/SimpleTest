@@ -6,7 +6,7 @@ from schemas.reciepts import PaymentType, QueryPair, RecieptsFilter
 
 class Filter:
     @staticmethod
-    def _format_value(value: Any) -> str:
+    def _format_str_value(value: Any) -> str:
         if isinstance(value, str):
             return f"'{value}'"
         return str(value)
@@ -16,11 +16,17 @@ class Filter:
         conditions = []
         if query:
             if query.gt is not None:
-                conditions.append(f"{field_name} >= {Filter._format_value(query.gt)}")
-            if query.ls is not None:
-                conditions.append(f"{field_name} <= {Filter._format_value(query.gt)}")
+                conditions.append(
+                    f"{field_name} > {Filter._format_str_value(query.gt)}"
+                )
+            if query.lw is not None:
+                conditions.append(
+                    f"{field_name} < {Filter._format_str_value(query.lw)}"
+                )
             if query.eq is not None:
-                conditions.append(f"{field_name} = {Filter._format_value(query.eq)}")
+                conditions.append(
+                    f"{field_name} = {Filter._format_str_value(query.eq)}"
+                )
         return " AND ".join(conditions) if len(conditions) > 0 else ""
 
     @staticmethod

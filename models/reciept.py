@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Double
+from sqlalchemy import DateTime, ForeignKey, Integer, Double, Enum as SAEnum
 from sqlalchemy.orm import mapped_column, Mapped
 from sqlalchemy.dialects.postgresql import JSONB
 
-from schemas.reciepts import GetReciept, PaymentType
+from schemas.reciepts import RecieptGet, Product, PaymentType, Payment
 from database import Base
 
 
@@ -16,11 +16,13 @@ class Reciept(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False
     )
-    products: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    products: Mapped[dict[str, list[dict[str, Any]]]] = mapped_column(
+        JSONB, nullable=False
+    )
     total: Mapped[float] = mapped_column(Double, nullable=False)
     rest: Mapped[float] = mapped_column(Double, nullable=False)
     type: Mapped[PaymentType] = mapped_column(
-        Enum(PaymentType, name="payment_type"), nullable=False
+        SAEnum(PaymentType, name="payment_type"), nullable=False
     )
     created: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.now(timezone.utc)
@@ -30,9 +32,10 @@ class Reciept(Base):
         return f"<Check(id={self.id}, user_id={self.user_id}, created={self.created})>"
 
     def to_pydantic_model(self):
-        return GetReciept(
+        return RecieptGet(
             id=self.id,
-            data=self.data,
+            payment=Payment(type=self.type, amount=self.total - self.rest),
+            products=[Product(**product) for product in self.products["products"]],
             total=self.total,
             rest=self.rest,
             created=self.created,

@@ -7,7 +7,7 @@ from utils.filters_query import Filter
 from middleware.bearer import require_auth_token
 from models.reciept import Reciept
 from database import SessionDep
-from schemas.reciepts import RecieptCreate, RecieptGet, RecieptsFilter
+from schemas.reciepts import RecieptCreate, RecieptGet, RecieptsFilter, Payment
 
 
 router = APIRouter(prefix="/reciept", tags=["reciept"])
@@ -16,22 +16,22 @@ router = APIRouter(prefix="/reciept", tags=["reciept"])
 @router.post("")
 async def create_reciept(
     user_id: Annotated[int, Depends(require_auth_token, use_cache=False)],
-    cr: RecieptCreate,
+    rc: RecieptCreate,
     db: SessionDep,
 ):
     total = 0.0
-    for product in cr.products:
+    for product in rc.products:
         product.total = product.quantity * product.price
         total += product.total
-    rest = total - cr.payment.amount
+    rest = total - rc.payment.amount
     async with db:
         try:
             reciept = Reciept(
                 user_id=user_id,
-                data=cr.model_dump(),
+                data=rc.model_dump(),
                 total=total,
                 rest=rest,
-                type=cr.payment.type,
+                type=rc.payment.type,
             )
             db.add(reciept)
             await db.commit()
@@ -60,8 +60,9 @@ async def list_personal_reciepts(
     rows = result.fetchall()
     return [
         RecieptGet(
+            products=row.products["products"],
+            payment=Payment(type=row.type, amount=row.total - row.rest),
             id=row.id,
-            data=row.data,
             total=row.total,
             rest=row.rest,
             created=row.created,

@@ -1,4 +1,5 @@
 import os
+import asyncio
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -24,9 +25,9 @@ uvicorn = Server(
     Config(
         app=app,
         host="127.0.0.1",
-        port=os.getenv("APP_PORT", 8000),
-        workers=os.getenv("APP_WORKERS", 4),
+        port=int(os.getenv("APP_PORT", 8000)),
+        workers=int(os.getenv("APP_WORKERS", 4)),
     )
 )
-
-uvicorn.serve()
+with asyncio.Runner() as runner:
+    runner.run(uvicorn.serve())

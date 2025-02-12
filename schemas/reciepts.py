@@ -20,7 +20,7 @@ class PaymentType(enum.Enum):
 
 
 class Payment(BaseModel):
-    type: Literal[PaymentType.CASH, PaymentType.CASHLESS]
+    type: PaymentType
     amount: float
 
 
@@ -39,7 +39,7 @@ class RecieptGet(RecieptCreate):
 class QueryPair(BaseModel):
     gt: Optional[Any] = None
     eq: Optional[Any] = None
-    ls: Optional[Any] = None
+    lw: Optional[Any] = None
 
 
 class RecieptsFilter(BaseModel):
