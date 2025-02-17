@@ -9,5 +9,5 @@ class Token(BaseModel):
 
 
 class TokenPayload(BaseModel):
-    sub = int
-    exp = datetime
+    sub: int
+    exp: datetime

@@ -3,34 +3,17 @@ from fastapi import HTTPException, status
 from schemas.reciepts import RecieptGet, Product, PaymentType
 
 
-username = "user"
-receipt_data = {
-    "products": [
-        {"name": "Mavic 3T", "price": 298870.00, "quantity": 3.00, "total": 896610.00},
-        {
-            "name": "Дрон FPV з акумулятором\n6S чорний",
-            "price": 31000.00,
-            "quantity": 20.00,
-            "total": 620000.00,
-        },
-    ],
-    "total": 1516610.00,
-    "rest": 0.00,
-    "payment": {"type": "cash", "amount": 1516610.00},
-}
-
-
 class TextReciept:
     def __init__(
         self,
         reciept_width: int,
         reciept: RecieptGet,
-        chapter_symbol: str = "=",
+        chapter_char: str = "=",
         product_char: str = "-",
     ) -> None:
         self.reciept_width = reciept_width
         self.reciept = reciept
-        self.chapter_symbol = chapter_symbol
+        self.chapter_char = chapter_char
         self.product_char = product_char
 
     def _gen_name(self, username: str):
@@ -106,7 +89,7 @@ class TextReciept:
     def generate_reciept(self, username: str):
         reciept_lines = []
 
-        chapter_separator = self.chapter_symbol * self.reciept_width
+        chapter_separator = self.chapter_char * self.reciept_width
         product_separator = self.product_char * self.reciept_width
 
         reciept_lines.append(self._gen_name(username))
@@ -123,3 +106,6 @@ class TextReciept:
 
         reciept_lines.append(self._generate_summary())
         reciept_lines.append(chapter_separator)
+        reciept_lines.append(self.reciept.created.strftime("%H:%M:%S %d.%m.%Y"))
+        reciept_lines.append("Дякуємо за покупку!".center(self.reciept_width))
+        return "\n".join(reciept_lines)

@@ -8,6 +8,7 @@ from middleware.bearer import require_auth_token
 from models.reciept import Reciept
 from database import SessionDep
 from schemas.reciepts import RecieptCreate, RecieptGet, RecieptsFilter, Payment
+from utils.reciept_generator import TextReciept
 
 
 router = APIRouter(prefix="/reciept", tags=["reciept"])
@@ -84,3 +85,26 @@ async def get_reciept(
             status_code=status.HTTP_404_NOT_FOUND, content="Cannot find reciept by id"
         )
     return reciept.to_pydantic_model()
+
+
+@router.get("/{reciept_id}/print")
+async def get_text_reciept(
+    reciept_id: int,
+    db: SessionDep,
+    width: int = 32,
+    chapter_char: str = "=",
+    product_char: str = "-",
+):
+    async with db:
+        result = await db.execute(select(Reciept).where(Reciept.id == reciept_id))
+        reciept = result.scalar_one_or_none()
+    if not reciept:
+        return Response(
+            status_code=status.HTTP_404_NOT_FOUND, content="Cannot find reciept by id"
+        )
+    return TextReciept(
+        reciept_width=width,
+        reciept=reciept.to_pydantic_model(),
+        chapter_char=chapter_char,
+        product_char=product_char,
+    )
