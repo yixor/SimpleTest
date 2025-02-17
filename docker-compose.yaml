@@ -1,0 +1,18 @@
+services:
+  app:
+    container_name: app
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=123123
+      - POSTGRES_DB=db
+    ports:
+      - "5432:5432"

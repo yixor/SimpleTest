@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # DATABASE
+    db_name: str
     db_username: str
     db_password: str
     db_address: str

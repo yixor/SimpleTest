@@ -1,33 +1,30 @@
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 
 from config import SETTINGS
 
-connection_url = (
-    f"{SETTINGS.db_username}:{SETTINGS.db_password}"
-    f"@{SETTINGS.db_address}:{SETTINGS.db_port}"
-    f"/{SETTINGS.db_name}"
-)
-engine = create_async_engine(
-    f"postgresql+asyncpg://{connection_url}",
+connection_url = f"{SETTINGS.db_username}:{SETTINGS.db_password}@{SETTINGS.db_address}:{SETTINGS.db_port}/{SETTINGS.db_name}"
+engine = create_engine(
+    f"postgresql+psycopg2://{connection_url}",
     echo=True,
 )
 
-
-def get_db() -> AsyncSession:
-    return sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+session_maker = sessionmaker(engine, expire_on_commit=False)
 
 
-SessionDep = Annotated[AsyncSession, Depends(get_db)]
+def get_db():
+    return session_maker()
+
+
+SessionDep = Annotated[Session, Depends(get_db)]
 
 
 class Base(DeclarativeBase):
     pass
 
 
-async def inspect_database():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all())
+def init_db_sync():
+    Base.metadata.create_all(engine)

@@ -12,7 +12,7 @@ from schemas.tokens import Token
 
 class User(Base):
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(48))
     login: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     pass_hash: Mapped[bytes] = mapped_column(LargeBinary(60))
@@ -20,21 +20,20 @@ class User(Base):
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, name={self.name!r}, login={self.login!r}, pass_hash={self.pass_hash!r})"
 
-    def set_password(self, password: str) -> None:
+    @staticmethod
+    def gen_password(password: str) -> None:
         password_bytes = password.encode("utf-8")
-        self.password_hash = bcrypt.hashpw(
-            password_bytes, bcrypt.gensalt(SETTINGS.salt_rounds)
-        )
+        return bcrypt.hashpw(password_bytes, bcrypt.gensalt(SETTINGS.salt_rounds))
 
     def check_password(self, password: str) -> bool:
         password_bytes = password.encode("utf-8")
-        return bcrypt.checkpw(password_bytes, self.password_hash)
+        return bcrypt.checkpw(password_bytes, self.pass_hash)
 
     def create_access_token(self) -> Token:
         expire = datetime.now(timezone.utc) + timedelta(
             minutes=SETTINGS.jwt_expires_delta
         )
-        to_encode = {"sub": self.id, "exp": expire}
+        to_encode = {"sub": str(self.id), "exp": expire}
         encoded_jwt = jwt.encode(
             to_encode, SETTINGS.jwt_secret_key, algorithm=SETTINGS.jwt_algorithm
         )

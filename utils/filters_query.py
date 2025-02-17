@@ -64,7 +64,9 @@ class Filter:
             elif field == "offset":
                 query_parts.append(Filter._add_offset_to_sql(value))
 
-        where_clause = " AND ".join(sql_conditions) if len(sql_conditions) > 0 else ""
+        where_clause = (
+            ("AND " + " AND ".join(sql_conditions)) if len(sql_conditions) > 0 else ""
+        )
         limit_offset_clause = " ".join(query_parts)
 
         return (

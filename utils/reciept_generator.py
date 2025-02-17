@@ -32,6 +32,12 @@ class TextReciept:
     def _gen_product_name_and_total(self, product: Product):
         name: str = product.name
         total: str = self._format_number(product.total)
+        if len(name) < self.reciept_width // 2:
+            return (
+                f"{name}"
+                + f"{' ' * (self.reciept_width - len(name) - len(total))}"
+                + f"{total}"
+            )
         max_name_length = self.reciept_width - len(total)
         name_words = name.split(" ")
         words_length = len(name_words)
@@ -62,7 +68,7 @@ class TextReciept:
                         status_code=status.HTTP_411_LENGTH_REQUIRED,
                         detail="Cannot generate reciept with given line width",
                     )
-        return words_list
+        return "\n".join(words_list)
 
     def _generate_summary(self):
         summary = []
@@ -84,28 +90,41 @@ class TextReciept:
         summary.append(
             "Решта" + f"{' ' * (self.reciept_width - len('Решта') - len(rest))}" + rest
         )
-        return summary
+        return "\n".join(summary)
 
-    def generate_reciept(self, username: str):
+    def generate_reciept(self, user_name: str):
         reciept_lines = []
 
         chapter_separator = self.chapter_char * self.reciept_width
         product_separator = self.product_char * self.reciept_width
 
-        reciept_lines.append(self._gen_name(username))
+        reciept_lines.append(self._gen_name(user_name))
         reciept_lines.append(chapter_separator)
 
         products_count = len(self.reciept.products)
-        for i, product in enumerate(self.reciept.products):
-            reciept_lines.append(self._gen_product_quantity_and_price(product))
-            reciept_lines.append(self._gen_product_name_and_total(product))
-            if i < products_count:
-                reciept_lines.append(product_separator)
-            else:
-                reciept_lines.append(chapter_separator)
+        if products_count == 1:
+            reciept_lines.append(
+                self._gen_product_quantity_and_price(self.reciept.products[0])
+            )
+            reciept_lines.append(
+                self._gen_product_name_and_total(self.reciept.products[0])
+            )
+            reciept_lines.append(chapter_separator)
+        else:
+            for i, product in enumerate(self.reciept.products):
+                reciept_lines.append(self._gen_product_quantity_and_price(product))
+                reciept_lines.append(self._gen_product_name_and_total(product))
+                if i < products_count:
+                    reciept_lines.append(product_separator)
+                else:
+                    reciept_lines.append(chapter_separator)
 
         reciept_lines.append(self._generate_summary())
         reciept_lines.append(chapter_separator)
-        reciept_lines.append(self.reciept.created.strftime("%H:%M:%S %d.%m.%Y"))
+        reciept_lines.append(
+            self.reciept.created.strftime("%H:%M:%S %d.%m.%Y").center(
+                self.reciept_width
+            )
+        )
         reciept_lines.append("Дякуємо за покупку!".center(self.reciept_width))
         return "\n".join(reciept_lines)

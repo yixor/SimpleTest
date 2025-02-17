@@ -27,9 +27,10 @@ def require_auth_token(
     to_return = _reject_session
     if credentials is not None:
         try:
+            print(credentials.credentials)
             token_payload = TokenPayload(
                 **jwt.decode(
-                    credentials.credentials,
+                    str(credentials.credentials),
                     verify=True,
                     key=SETTINGS.jwt_secret_key,
                     algorithms=[SETTINGS.jwt_algorithm],
@@ -38,5 +39,5 @@ def require_auth_token(
             if token_payload.exp > datetime.now(timezone.utc):
                 return token_payload.sub
         except jwt.PyJWTError as e:
-            logging.warning(f"[{datetime.isoformat()}] Error {e} on JWT decoding")
+            logging.warning(f"[{datetime.now().isoformat()}] Error {e} on JWT decoding")
     return to_return()
